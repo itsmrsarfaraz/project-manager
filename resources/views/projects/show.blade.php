@@ -6,20 +6,28 @@
                 <p class="text-sm text-gray-500">Owner: {{ $project->owner->name }}</p>
             </div>
             <div class="flex gap-2">
-                <a href="{{ route('projects.edit', $project) }}"
-                   class="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                    Edit Project
-                </a>
-                {{-- Delete Form (forms can't do DELETE via HTML, we spoof it) --}}
-                <form method="POST" action="{{ route('projects.destroy', $project) }}"
-                      onsubmit="return confirm('Delete this project? This cannot be undone.')">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit"
-                            class="px-3 py-1.5 text-sm bg-red-600 text-white rounded-md hover:bg-red-700">
-                        Delete
-                    </button>
-                </form>
+
+                {{-- Only owner or manager sees Edit button --}}
+                @can('update', $project)
+                    <a href="{{ route('projects.edit', $project) }}"
+                    class="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                        Edit Project
+                    </a>
+                @endcan
+
+                {{-- Only owner sees Delete button --}}
+                @can('delete', $project)
+                    <form method="POST" action="{{ route('projects.destroy', $project) }}"
+                        onsubmit="return confirm('Delete this project? This cannot be undone.')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit"
+                                class="px-3 py-1.5 text-sm bg-red-600 text-white rounded-md hover:bg-red-700">
+                            Delete
+                        </button>
+                    </form>
+                @endcan
+
             </div>
         </div>
     </x-slot>
@@ -131,47 +139,49 @@
                                     <p class="text-sm font-medium text-gray-900">{{ $member->name }}</p>
                                     <p class="text-xs text-gray-500 capitalize">{{ $member->pivot->role }}</p>
                                 </div>
-                                @if ($member->pivot->role !== 'owner')
-                                    <form method="POST"
-                                          action="{{ route('projects.members.destroy', [$project, $member]) }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                                class="text-xs text-red-500 hover:text-red-700">Remove</button>
-                                    </form>
-                                @endif
+
+                                {{-- Only owner can remove non-owner members --}}
+                                @can('removeMember', $project)
+                                    @if ($member->pivot->role !== 'owner')
+                                        <form method="POST"
+                                            action="{{ route('projects.members.destroy', [$project, $member]) }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="text-xs text-red-500 hover:text-red-700">Remove</button>
+                                        </form>
+                                    @endif
+                                @endcan
                             </div>
                         @endforeach
                     </div>
 
-                    {{-- Invite Member Form --}}
-                    <div class="bg-white rounded-lg shadow p-4">
-                        <h4 class="text-sm font-semibold text-gray-700 mb-3">Invite Member</h4>
-                        <form method="POST" action="{{ route('projects.members.store', $project) }}">
-                            @csrf
-                            <div class="mb-3">
-                                <x-input-label for="email" value="Email address" />
-                                <x-text-input
-                                    id="email" name="email" type="email"
-                                    class="mt-1 block w-full text-sm"
-                                    placeholder="colleague@example.com"
-                                    :value="old('email')"
-                                />
-                                <x-input-error :messages="$errors->get('email')" class="mt-1" />
-                            </div>
-                            <div class="mb-3">
-                                <x-input-label for="role" value="Role" />
-                                <select id="role" name="role"
-                                    class="mt-1 block w-full text-sm border-gray-300 rounded-md shadow-sm">
-                                    <option value="member">Member</option>
-                                    <option value="manager">Manager</option>
-                                </select>
-                            </div>
-                            <x-primary-button class="w-full justify-center">
-                                Invite
-                            </x-primary-button>
-                        </form>
-                    </div>
+                    {{-- Invite Member Form — only visible to owner/manager --}}
+                    @can('addMember', $project)
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h4 class="text-sm font-semibold text-gray-700 mb-3">Invite Member</h4>
+                            <form method="POST" action="{{ route('projects.members.store', $project) }}">
+                                @csrf
+                                <div class="mb-3">
+                                    <x-input-label for="email" value="Email address" />
+                                    <x-text-input id="email" name="email" type="email"
+                                        class="mt-1 block w-full text-sm"
+                                        placeholder="colleague@example.com"
+                                        :value="old('email')" />
+                                    <x-input-error :messages="$errors->get('email')" class="mt-1" />
+                                </div>
+                                <div class="mb-3">
+                                    <x-input-label for="role" value="Role" />
+                                    <select id="role" name="role"
+                                        class="mt-1 block w-full text-sm border-gray-300 rounded-md shadow-sm">
+                                        <option value="member">Member</option>
+                                        <option value="manager">Manager</option>
+                                    </select>
+                                </div>
+                                <x-primary-button class="w-full justify-center">Invite</x-primary-button>
+                            </form>
+                        </div>
+                    @endcan
 
                 </div>
             </div>

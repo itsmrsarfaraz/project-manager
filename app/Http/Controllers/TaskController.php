@@ -10,23 +10,21 @@ use Illuminate\View\View;
 
 class TaskController extends Controller
 {
-    /**
-     * Show form to create a task inside a specific project.
-     * Note BOTH $project and $task are injected — nested route model binding.
-     */
     public function create(Project $project): View
     {
-        // Pass members so the form can show an "assign to" dropdown
+        // Authorize against the PROJECT (any member can create tasks)
+        $this->authorize('update', $project); // reuse project's update policy
+        // Alternative: create a custom 'addTask' policy method
+
         $members = $project->members;
 
         return view('tasks.create', compact('project', 'members'));
     }
 
-    /**
-     * Store a new task.
-     */
     public function store(Request $request, Project $project): RedirectResponse
     {
+        $this->authorize('update', $project);
+
         $validated = $request->validate([
             'title'       => ['required', 'string', 'min:3', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -43,29 +41,26 @@ class TaskController extends Controller
             ->with('success', 'Task created.');
     }
 
-    /**
-     * Show a single task.
-     */
     public function show(Project $project, Task $task): View
     {
+        $this->authorize('view', $task);
+
         return view('tasks.show', compact('project', 'task'));
     }
 
-    /**
-     * Show edit form for a task.
-     */
     public function edit(Project $project, Task $task): View
     {
+        $this->authorize('update', $task);
+
         $members = $project->members;
 
         return view('tasks.edit', compact('project', 'task', 'members'));
     }
 
-    /**
-     * Update a task.
-     */
     public function update(Request $request, Project $project, Task $task): RedirectResponse
     {
+        $this->authorize('update', $task);
+
         $validated = $request->validate([
             'title'       => ['required', 'string', 'min:3', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -82,11 +77,10 @@ class TaskController extends Controller
             ->with('success', 'Task updated.');
     }
 
-    /**
-     * Delete a task.
-     */
     public function destroy(Project $project, Task $task): RedirectResponse
     {
+        $this->authorize('delete', $task);
+
         $task->delete();
 
         return redirect()

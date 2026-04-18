@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Project;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -49,6 +50,8 @@ class User extends Authenticatable
         ];
     }
 
+    // relationships
+
     // Projects this user OWNS
     public function ownedProjects(): HasMany
     {
@@ -67,5 +70,31 @@ class User extends Authenticatable
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class, 'assigned_to');
+    }
+
+    // Helper functions 
+
+    /**
+     * Get this user's role on a specific project.
+     * Returns null if the user is not a member.
+     */
+    public function roleOn(Project $project): ?string
+    {
+        // Find this user's pivot row for the given project
+        $membership = $this->projects()
+            ->where('project_id', $project->id)
+            ->first();
+
+        return $membership?->pivot->role; // null-safe: returns null if not a member
+    }
+
+    /**
+     * Check if the user is a member of a project (any role).
+     */
+    public function isMemberOf(Project $project): bool
+    {
+        return $this->projects()
+            ->where('project_id', $project->id)
+            ->exists(); // exists() is more efficient than count() > 0
     }
 }
