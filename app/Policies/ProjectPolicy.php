@@ -69,4 +69,12 @@ class ProjectPolicy
     {
         return $user->roleOn($project) === 'owner';
     }
+
+    /**
+     * Any project member can create tasks.
+     */
+    public function addTask(User $user, Project $project): bool
+    {
+        return $user->isMemberOf($project);
+    }
 }

@@ -65,10 +65,12 @@
                 <div class="lg:col-span-2 space-y-4">
                     <div class="flex items-center justify-between">
                         <h3 class="text-lg font-semibold text-gray-800">Tasks</h3>
-                        <a href="{{ route('projects.tasks.create', $project) }}"
-                           class="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
-                            + Add Task
-                        </a>
+                        @can('addTask', $project)
+                            <a href="{{ route('projects.tasks.create', $project) }}"
+                               class="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                                + Add Task
+                            </a>
+                        @endcan
                     </div>
 
                     @forelse ($project->tasks as $task)

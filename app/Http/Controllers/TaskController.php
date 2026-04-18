@@ -13,7 +13,7 @@ class TaskController extends Controller
     public function create(Project $project): View
     {
         // Authorize against the PROJECT (any member can create tasks)
-        $this->authorize('update', $project); // reuse project's update policy
+        $this->authorize('addTask', $project); // reuse project's update policy
         // Alternative: create a custom 'addTask' policy method
 
         $members = $project->members;
@@ -23,7 +23,7 @@ class TaskController extends Controller
 
     public function store(Request $request, Project $project): RedirectResponse
     {
-        $this->authorize('update', $project);
+        $this->authorize('addTask', $project);
 
         $validated = $request->validate([
             'title'       => ['required', 'string', 'min:3', 'max:255'],
