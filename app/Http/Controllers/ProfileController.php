@@ -2,86 +2,59 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreProjectRequest;
-use App\Http\Requests\UpdateProjectRequest;
-use App\Models\Project;
+use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 
-class ProjectController extends Controller
+class ProfileController extends Controller
 {
-    public function index(): View
+    /**
+     * Display the user's profile form.
+     */
+    public function edit(Request $request): View
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-
-        $projects = $user->projects()
-            ->with('owner')
-            ->latest()
-            ->paginate(10);
-
-        return view('projects.index', compact('projects'));
+        return view('profile.edit', [
+            'user' => $request->user(),
+        ]);
     }
 
-    public function create(): View
+    /**
+     * Update the user's profile information.
+     */
+    public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        return view('projects.create');
+        $request->user()->fill($request->validated());
+
+        if ($request->user()->isDirty('email')) {
+            $request->user()->email_verified_at = null;
+        }
+
+        $request->user()->save();
+
+        return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
-    // StoreProjectRequest replaces Request + inline validate()
-    public function store(StoreProjectRequest $request): RedirectResponse
+    /**
+     * Delete the user's account.
+     */
+    public function destroy(Request $request): RedirectResponse
     {
-        // No validate() call needed — already done by the Form Request
-        // $request->validated() returns ONLY the fields that passed rules
-        $project = Project::create([
-            ...$request->validated(),
-            'owner_id' => Auth::id(),
+        $request->validateWithBag('userDeletion', [
+            'password' => ['required', 'current_password'],
         ]);
 
-        $project->members()->attach(Auth::id(), ['role' => 'owner']);
+        $user = $request->user();
 
-        return redirect()
-            ->route('projects.show', $project)
-            ->with('success', 'Project created successfully.');
-    }
+        Auth::logout();
 
-    public function show(Project $project): View
-    {
-        $this->authorize('view', $project);
+        $user->delete();
 
-        $project->load(['members', 'tasks.assignee', 'owner']);
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
-        return view('projects.show', compact('project'));
-    }
-
-    public function edit(Project $project): View
-    {
-        $this->authorize('update', $project);
-
-        return view('projects.edit', compact('project'));
-    }
-
-    // UpdateProjectRequest handles both authorization AND validation
-    public function update(UpdateProjectRequest $request, Project $project): RedirectResponse
-    {
-        // No authorize() call needed — UpdateProjectRequest::authorize() handles it
-        // No validate() call needed — already validated
-        $project->update($request->validated());
-
-        return redirect()
-            ->route('projects.show', $project)
-            ->with('success', 'Project updated successfully.');
-    }
-
-    public function destroy(Project $project): RedirectResponse
-    {
-        $this->authorize('delete', $project);
-
-        $project->delete();
-
-        return redirect()
-            ->route('projects.index')
-            ->with('success', 'Project deleted.');
+        return Redirect::to('/');
     }
 }

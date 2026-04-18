@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreProjectRequest;
+use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -15,10 +16,7 @@ class ProjectController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // viewAny is implicitly allowed — no authorize() needed
-        // The query already scopes to the logged-in user's projects
-        $projects = $user
-            ->projects()
+        $projects = $user->projects()
             ->with('owner')
             ->latest()
             ->paginate(10);
@@ -28,20 +26,16 @@ class ProjectController extends Controller
 
     public function create(): View
     {
-        // Any authenticated user can reach this (policy: create = true)
         return view('projects.create');
     }
 
-    public function store(Request $request): RedirectResponse
+    // StoreProjectRequest replaces Request + inline validate()
+    public function store(StoreProjectRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name'        => ['required', 'string', 'min:3', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'status'      => ['required', 'in:active,archived,completed'],
-        ]);
-
+        // No validate() call needed — already done by the Form Request
+        // $request->validated() returns ONLY the fields that passed rules
         $project = Project::create([
-            ...$validated,
+            ...$request->validated(),
             'owner_id' => Auth::id(),
         ]);
 
@@ -54,9 +48,6 @@ class ProjectController extends Controller
 
     public function show(Project $project): View
     {
-        // Throws a 403 Forbidden if the user is not a member
-        $this->authorize('view', $project);
-
         $project->load(['members', 'tasks.assignee', 'owner']);
 
         return view('projects.show', compact('project'));
@@ -64,23 +55,15 @@ class ProjectController extends Controller
 
     public function edit(Project $project): View
     {
-        // Only owner or manager can edit
-        $this->authorize('update', $project);
-
         return view('projects.edit', compact('project'));
     }
 
-    public function update(Request $request, Project $project): RedirectResponse
+    // UpdateProjectRequest handles both authorization AND validation
+    public function update(UpdateProjectRequest $request, Project $project): RedirectResponse
     {
-        $this->authorize('update', $project);
-
-        $validated = $request->validate([
-            'name'        => ['required', 'string', 'min:3', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'status'      => ['required', 'in:active,archived,completed'],
-        ]);
-
-        $project->update($validated);
+        // No authorize() call needed — UpdateProjectRequest::authorize() handles it
+        // No validate() call needed — already validated
+        $project->update($request->validated());
 
         return redirect()
             ->route('projects.show', $project)
@@ -89,7 +72,6 @@ class ProjectController extends Controller
 
     public function destroy(Project $project): RedirectResponse
     {
-        // Only owner can delete
         $this->authorize('delete', $project);
 
         $project->delete();
