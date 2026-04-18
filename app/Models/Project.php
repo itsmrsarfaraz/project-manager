@@ -38,4 +38,24 @@ class Project extends Model
     {
         return $this->hasMany(Task::class);
     }
+
+    /**
+     * Calculate the completion percentage of a project's tasks.
+     * Returns 0 if there are no tasks (avoids division by zero).
+     *
+     * Usage: $project->completionPercentage()
+     * Or in dashboard with withCount: use the counts directly
+     */
+    public function completionPercentage(): int
+    {
+        $total = $this->tasks()->count();
+
+        if ($total === 0) {
+            return 0;
+        }
+
+        $done = $this->tasks()->where('status', 'done')->count();
+
+        return (int) round(($done / $total) * 100);
+    }
 }
