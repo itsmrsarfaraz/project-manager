@@ -2,39 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreTaskRequest;
+use App\Http\Requests\UpdateTaskRequest;
 use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class TaskController extends Controller
 {
     public function create(Project $project): View
     {
-        // Authorize against the PROJECT (any member can create tasks)
-        $this->authorize('addTask', $project); // reuse project's update policy
-        // Alternative: create a custom 'addTask' policy method
+        $this->authorize('addTask', $project);
 
         $members = $project->members;
 
         return view('tasks.create', compact('project', 'members'));
     }
 
-    public function store(Request $request, Project $project): RedirectResponse
+    // StoreTaskRequest handles authorization + validation + business rules
+    public function store(StoreTaskRequest $request, Project $project): RedirectResponse
     {
-        $this->authorize('addTask', $project);
-
-        $validated = $request->validate([
-            'title'       => ['required', 'string', 'min:3', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'status'      => ['required', 'in:todo,in_progress,done'],
-            'priority'    => ['required', 'in:low,medium,high'],
-            'due_date'    => ['nullable', 'date', 'after_or_equal:today'],
-            'assigned_to' => ['nullable', 'exists:users,id'],
-        ]);
-
-        $project->tasks()->create($validated);
+        $project->tasks()->create($request->validated());
 
         return redirect()
             ->route('projects.show', $project)
@@ -57,20 +46,10 @@ class TaskController extends Controller
         return view('tasks.edit', compact('project', 'task', 'members'));
     }
 
-    public function update(Request $request, Project $project, Task $task): RedirectResponse
+    // UpdateTaskRequest handles authorization + validation + business rules
+    public function update(UpdateTaskRequest $request, Project $project, Task $task): RedirectResponse
     {
-        $this->authorize('update', $task);
-
-        $validated = $request->validate([
-            'title'       => ['required', 'string', 'min:3', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'status'      => ['required', 'in:todo,in_progress,done'],
-            'priority'    => ['required', 'in:low,medium,high'],
-            'due_date'    => ['nullable', 'date'],
-            'assigned_to' => ['nullable', 'exists:users,id'],
-        ]);
-
-        $task->update($validated);
+        $task->update($request->validated());
 
         return redirect()
             ->route('projects.show', $project)
