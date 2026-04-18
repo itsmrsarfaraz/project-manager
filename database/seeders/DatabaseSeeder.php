@@ -2,24 +2,18 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // ORDER MATTERS: Users must exist before Projects,
+        // Projects must exist before Tasks
+        $this->call([
+            UserSeeder::class,
+            ProjectSeeder::class,
+            // TaskSeeder is handled inside ProjectSeeder for now
         ]);
     }
 }
