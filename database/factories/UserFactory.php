@@ -18,4 +18,15 @@ class UserFactory extends Factory
             'remember_token'    => Str::random(10),
         ];
     }
+
+    /**
+     * Indicate that the model's email address should be unverified.
+     * Required by Breeze's EmailVerificationTest.
+     */
+    public function unverified(): static  // ← ADD THIS STATE
+    {
+        return $this->state(fn(array $attributes) => [
+            'email_verified_at' => null,
+        ]);
+    }
 }
