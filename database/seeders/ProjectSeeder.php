@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -52,6 +53,21 @@ class ProjectSeeder extends Seeder
                         // pluck IDs + add null so some tasks are unassigned
                     ),
                 ]);
+
+                // After the Task::factory() block, add:
+                $tasks = $project->tasks;
+
+                foreach ($tasks as $task) {
+                    // Add 0–3 comments per task
+                    $commentCount = rand(0, 3);
+                    for ($c = 0; $c < $commentCount; $c++) {
+                        Comment::factory()->create([
+                            'user_id'          => $allMembers->random()->id,
+                            'commentable_id'   => $task->id,
+                            'commentable_type' => \App\Models\Task::class,
+                        ]);
+                    }
+                }
             }
         }
     }

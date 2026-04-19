@@ -97,4 +97,10 @@ class User extends Authenticatable
             ->where('project_id', $project->id)
             ->exists(); // exists() is more efficient than count() > 0
     }
+
+    // All comments written by this user
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
 }

@@ -34,7 +34,7 @@ class TaskController extends Controller
     {
         $this->authorize('view', $task);
 
-        // Eager load comments + each comment's author
+        // Eager load comments with their authors
         $task->load('comments.author');
 
         return view('tasks.show', compact('project', 'task'));

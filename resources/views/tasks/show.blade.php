@@ -98,89 +98,49 @@
                 </div>
 
             </div>
-            {{-- ── Comments Section ──────────────────────────────────── --}}
-            <div class="bg-white rounded-lg shadow p-6 space-y-4">
-                <h3 class="text-lg font-semibold text-gray-800">
-                    Comments
-                    <span class="text-sm font-normal text-gray-400">
-                        ({{ $task->comments->count() }})
-                    </span>
-                </h3>
+            
+            {{-- ── Comments Section ──────────────────────────────── --}}
+            <div class="bg-white rounded-lg shadow">
 
-                {{-- Flash message --}}
-                @if (session('success'))
-                    <x-shared.alert type="success" :message="session('success')" />
-                @endif
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-800">
+                        Comments
+                        <span class="text-sm text-gray-400 font-normal ml-1">
+                            ({{ $task->comments->count() }})
+                        </span>
+                    </h3>
+                </div>
 
                 {{-- Existing comments --}}
-                @forelse ($task->comments as $comment)
-                    <div class="border border-gray-100 rounded-lg p-4" id="comment-{{ $comment->id }}">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex-1">
-                                {{-- Author + timestamp --}}
-                                <div class="flex items-center gap-2 mb-2">
-                                    <span class="text-sm font-semibold text-gray-800">
-                                        {{ $comment->author->name }}
-                                    </span>
-                                    <span class="text-xs text-gray-400">
-                                        {{ $comment->created_at->diffForHumans() }}
-                                        @if ($comment->updated_at->gt($comment->created_at))
-                                            <em>(edited)</em>
-                                        @endif
-                                    </span>
-                                </div>
-
-                                {{-- Comment body --}}
-                                <div class="comment-body-{{ $comment->id }}">
-                                    <p class="text-sm text-gray-700">{{ $comment->body }}</p>
-                                </div>
-
-                                {{-- Inline edit form (hidden by default) --}}
-                                @can('update-comment-' . $comment->id)
-                                @endcan
-                                @if ($comment->isAuthoredBy(Auth::user()))
-                                    <div class="edit-form-{{ $comment->id }} hidden mt-2">
-                                        <form method="POST"
-                                            action="{{ route('projects.tasks.comments.update', [$project, $task, $comment]) }}">
-                                            @csrf
-                                            @method('PUT')
-                                            <textarea
-                                                name="body"
-                                                rows="3"
-                                                class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500"
-                                            >{{ $comment->body }}</textarea>
-                                            <div class="flex gap-2 mt-2">
-                                                <button type="submit"
-                                                        class="px-3 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">
-                                                    Save
-                                                </button>
-                                                <button type="button"
-                                                        onclick="toggleEdit({{ $comment->id }})"
-                                                        class="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        </form>
+                <div class="divide-y divide-gray-100">
+                    @forelse ($task->comments as $comment)
+                        <div class="px-6 py-4">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    {{-- Author + timestamp --}}
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="font-medium text-sm text-gray-900">
+                                            {{ $comment->author->name }}
+                                        </span>
+                                        <span class="text-xs text-gray-400">
+                                            {{ $comment->created_at->diffForHumans() }}
+                                        </span>
                                     </div>
-                                @endif
-                            </div>
+                                    {{-- Comment body --}}
+                                    <p class="text-gray-700 text-sm whitespace-pre-wrap">
+                                        {{ $comment->body }}
+                                    </p>
+                                </div>
 
-                            {{-- Action buttons --}}
-                            <div class="flex gap-2 shrink-0">
-                                @if ($comment->isAuthoredBy(Auth::user()))
-                                    <button onclick="toggleEdit({{ $comment->id }})"
-                                            class="text-xs text-gray-400 hover:text-indigo-600">
-                                        Edit
-                                    </button>
-                                @endif
-
-                                @if ($comment->isAuthoredBy(Auth::user()) || in_array(Auth::user()->roleOn($project), ['owner', 'manager']))
+                                {{-- Delete button (author or project owner) --}}
+                                @if ($comment->user_id === auth()->id())
                                     <form method="POST"
-                                        action="{{ route('projects.tasks.comments.destroy', [$project, $task, $comment]) }}">
+                                        action="{{ route('projects.tasks.comments.destroy', [$project, $task, $comment]) }}"
+                                        class="ml-4">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
-                                                class="text-xs text-gray-400 hover:text-red-600"
+                                                class="text-xs text-red-400 hover:text-red-600"
                                                 onclick="return confirm('Delete this comment?')">
                                             Delete
                                         </button>
@@ -188,44 +148,40 @@
                                 @endif
                             </div>
                         </div>
-                    </div>
-                @empty
-                    <p class="text-sm text-gray-400 italic">
-                        No comments yet. Be the first to comment.
-                    </p>
-                @endforelse
+
+                    @empty
+                        <div class="px-6 py-8 text-center text-gray-400 text-sm">
+                            No comments yet. Be the first to comment.
+                        </div>
+                    @endforelse
+                </div>
 
                 {{-- Add comment form --}}
-                @if (Auth::user()->isMemberOf($project))
-                    <div class="border-t pt-4">
-                        <h4 class="text-sm font-semibold text-gray-700 mb-2">Add a Comment</h4>
-                        <form method="POST"
-                            action="{{ route('projects.tasks.comments.store', [$project, $task]) }}">
-                            @csrf
+                <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-lg">
+                    @if (session('success'))
+                        <x-shared.alert type="success" :message="session('success')" class="mb-3" />
+                    @endif
+
+                    <form method="POST"
+                        action="{{ route('projects.tasks.comments.store', [$project, $task]) }}">
+                        @csrf
+                        <div class="mb-3">
                             <textarea
                                 name="body"
                                 rows="3"
                                 placeholder="Write a comment..."
-                                class="block w-full border-gray-300 rounded-md shadow-sm text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                class="w-full border-gray-300 rounded-md shadow-sm text-sm
+                                    focus:ring-indigo-500 focus:border-indigo-500"
                             >{{ old('body') }}</textarea>
                             <x-input-error :messages="$errors->get('body')" class="mt-1" />
-                            <div class="mt-2 flex justify-end">
-                                <x-primary-button>Post Comment</x-primary-button>
-                            </div>
-                        </form>
-                    </div>
-                @endif
-            </div>
+                        </div>
+                        <div class="flex justify-end">
+                            <x-primary-button>Post Comment</x-primary-button>
+                        </div>
+                    </form>
+                </div>
 
-            {{-- Inline edit toggle script --}}
-            <script>
-            function toggleEdit(commentId) {
-                const body = document.querySelector(`.comment-body-${commentId}`);
-                const form = document.querySelector(`.edit-form-${commentId}`);
-                body.classList.toggle('hidden');
-                form.classList.toggle('hidden');
-            }
-            </script>
+            </div>
         </div>
     </div>
 </x-app-layout>
