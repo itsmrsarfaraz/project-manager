@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreProjectMemberRequest;
+use App\Mail\ProjectInvitationMail;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Mail;
 
 class ProjectMemberController extends Controller
 {
@@ -17,6 +19,11 @@ class ProjectMemberController extends Controller
         $project->members()->attach($invitee->id, [
             'role' => $request->validated()['role'],
         ]);
+
+        // Send invitation email via queue
+        Mail::to($invitee->email)->send(
+            new ProjectInvitationMail($project, $invitee, $request->validated()['role'])
+        );
 
         return back()->with('success', "{$invitee->name} added to the project.");
     }
