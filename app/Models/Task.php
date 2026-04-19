@@ -58,4 +58,40 @@ class Task extends Model
     {
         return $this->belongsToMany(Label::class);
     }
+
+    public function scopeSearch($query, ?string $term): void
+    {
+        if (blank($term)) {
+            return;
+        }
+
+        $term = trim($term);
+
+        $query->where(function ($q) use ($term) {
+            $q->where('title', 'LIKE', "%{$term}%")
+                ->orWhere('description', 'LIKE', "%{$term}%");
+        });
+    }
+
+    public function scopeFilterStatus($query, ?string $status): void
+    {
+        $allowed = ['todo', 'in_progress', 'done'];
+
+        if (blank($status) || ! in_array($status, $allowed)) {
+            return;
+        }
+
+        $query->where('status', $status);
+    }
+
+    public function scopeFilterPriority($query, ?string $priority): void
+    {
+        $allowed = ['low', 'medium', 'high'];
+
+        if (blank($priority) || ! in_array($priority, $allowed)) {
+            return;
+        }
+
+        $query->where('priority', $priority);
+    }
 }

@@ -13,6 +13,67 @@
 
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 bg-white border-b border-gray-200">
+                    {{-- Search + Filter Bar --}}
+                    <form method="GET" action="{{ route('projects.index') }}" class="mb-6">
+                        <div class="flex flex-col sm:flex-row gap-3">
+
+                            {{-- Search input --}}
+                            <div class="flex-1">
+                                <input type="text"
+                                    name="search"
+                                    value="{{ request('search') }}"
+                                    placeholder="Search projects..."
+                                    class="w-full border-gray-300 rounded-md shadow-sm text-sm
+                                            focus:ring-indigo-500 focus:border-indigo-500" />
+                            </div>
+
+                            {{-- Status filter --}}
+                            <select name="status"
+                                    class="border-gray-300 rounded-md shadow-sm text-sm
+                                        focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">All statuses</option>
+                                @foreach (['active' => 'Active', 'archived' => 'Archived', 'completed' => 'Completed'] as $val => $label)
+                                    <option value="{{ $val }}" {{ request('status') === $val ? 'selected' : '' }}>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            <x-primary-button type="submit">Search</x-primary-button>
+
+                            {{-- Clear filters --}}
+                            @if (request()->hasAny(['search', 'status']))
+                                <a href="{{ route('projects.index') }}"
+                                class="px-4 py-2 text-sm text-gray-600 bg-white border border-gray-300
+                                        rounded-md hover:bg-gray-50">
+                                    Clear
+                                </a>
+                            @endif
+
+                        </div>
+
+                        {{-- Show active filter summary --}}
+                        @if (request()->hasAny(['search', 'status']))
+                            <p class="text-xs text-gray-500 mt-2">
+                                Showing results for
+                                @if(request('search'))
+                                    "<strong>{{ request('search') }}</strong>"
+                                @endif
+                                @if(request('status'))
+                                    · Status: <strong>{{ request('status') }}</strong>
+                                @endif
+                                · {{ $projects->total() }} project(s) found
+                            </p>
+                        @endif
+                    </form>
+                </div>
+            </div>
+    </div>
+
+    <div class="py-8">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             {{-- Flash message --}}
             @if (session('success'))

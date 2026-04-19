@@ -58,6 +58,60 @@
                 </div>
             </div>
 
+            {{-- Task search + filter bar --}}
+            <form method="GET" action="{{ route('projects.show', $project) }}"
+                class="flex flex-wrap gap-2 mb-4">
+
+                <input type="text" name="search" value="{{ request('search') }}"
+                    placeholder="Search tasks..."
+                    class="flex-1 min-w-0 border-gray-300 rounded-md shadow-sm text-sm" />
+
+                <select name="status"
+                        class="border-gray-300 rounded-md shadow-sm text-sm">
+                    <option value="">All statuses</option>
+                    @foreach(['todo' => 'To Do', 'in_progress' => 'In Progress', 'done' => 'Done'] as $val => $label)
+                        <option value="{{ $val }}" {{ request('status') === $val ? 'selected' : '' }}>
+                            {{ $label }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <select name="priority"
+                        class="border-gray-300 rounded-md shadow-sm text-sm">
+                    <option value="">All priorities</option>
+                    @foreach(['high' => 'High', 'medium' => 'Medium', 'low' => 'Low'] as $val => $label)
+                        <option value="{{ $val }}" {{ request('priority') === $val ? 'selected' : '' }}>
+                            {{ $label }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <x-primary-button type="submit">Filter</x-primary-button>
+
+                @if (request()->hasAny(['search', 'status', 'priority']))
+                    <a href="{{ route('projects.show', $project) }}"
+                    class="px-3 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                        Clear
+                    </a>
+                @endif
+
+            </form>
+
+            {{-- Update loop to use $tasks instead of $project->tasks --}}
+            @forelse ($tasks as $task)
+                {{-- ... existing task card markup ... --}}
+            @empty
+                <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+                    @if (request()->hasAny(['search', 'status', 'priority']))
+                        No tasks match your filters.
+                    @else
+                        No tasks yet.
+                        <a href="{{ route('projects.tasks.create', $project) }}"
+                        class="text-indigo-600 hover:underline">Add the first task.</a>
+                    @endif
+                </div>
+            @endforelse
+
             {{-- Two Column Layout --}}
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
