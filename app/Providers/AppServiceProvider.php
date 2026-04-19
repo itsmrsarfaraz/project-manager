@@ -6,6 +6,8 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Observers\ProjectObserver;
 use App\Observers\TaskObserver;
+use App\Services\ProjectService;
+use App\Services\TaskService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -15,7 +17,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(ProjectService::class);
+        $this->app->singleton(TaskService::class);
     }
 
     /**

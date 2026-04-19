@@ -5,14 +5,21 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Project;
+use App\Models\User;
+use App\Services\ProjectService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class ProjectController extends Controller
 {
-    public function index(Request $request): View
+    // Constructor injection — Laravel automatically provides ProjectService
+    public function __construct(
+        private readonly ProjectService $projectService
+    ) {}
+
+    public function index(): View
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -23,11 +30,9 @@ class ProjectController extends Controller
                 'tasks',
                 'tasks as completed_tasks_count' => fn($q) => $q->where('status', 'done'),
             ])
-            ->search($request->input('search'))          // ← scope
-            ->filterStatus($request->input('status'))    // ← scope
             ->latest()
             ->paginate(10)
-            ->withQueryString(); // ← preserves ?search=x&status=y in pagination links
+            ->withQueryString();
 
         return view('projects.index', compact('projects'));
     }
@@ -37,17 +42,13 @@ class ProjectController extends Controller
         return view('projects.create');
     }
 
-    // StoreProjectRequest replaces Request + inline validate()
     public function store(StoreProjectRequest $request): RedirectResponse
     {
-        // No validate() call needed — already done by the Form Request
-        // $request->validated() returns ONLY the fields that passed rules
-        $project = Project::create([
-            ...$request->validated(),
-            'owner_id' => Auth::id(),
-        ]);
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
 
-        $project->members()->attach(Auth::id(), ['role' => 'owner']);
+        // Controller delegates to service
+        $project = $this->projectService->createProject($user, $request->validated());
 
         return redirect()
             ->route('projects.show', $project)
@@ -66,7 +67,6 @@ class ProjectController extends Controller
             ->latest()
             ->get();
 
-        // Load recent activity — last 15 entries
         $activities = $project->activities()
             ->with('user')
             ->latest()
@@ -78,15 +78,14 @@ class ProjectController extends Controller
 
     public function edit(Project $project): View
     {
+        $this->authorize('update', $project);
+
         return view('projects.edit', compact('project'));
     }
 
-    // UpdateProjectRequest handles both authorization AND validation
     public function update(UpdateProjectRequest $request, Project $project): RedirectResponse
     {
-        // No authorize() call needed — UpdateProjectRequest::authorize() handles it
-        // No validate() call needed — already validated
-        $project->update($request->validated());
+        $this->projectService->updateProject($project, $request->validated());
 
         return redirect()
             ->route('projects.show', $project)
@@ -97,7 +96,7 @@ class ProjectController extends Controller
     {
         $this->authorize('delete', $project);
 
-        $project->delete();
+        $this->projectService->deleteProject($project);
 
         return redirect()
             ->route('projects.index')

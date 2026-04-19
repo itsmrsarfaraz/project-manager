@@ -3,35 +3,30 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreProjectMemberRequest;
-use App\Mail\ProjectInvitationMail;
 use App\Models\Project;
 use App\Models\User;
 use App\Services\ActivityLogger;
+use App\Services\ProjectService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
 
 class ProjectMemberController extends Controller
 {
-    // StoreProjectMemberRequest handles EVERYTHING before this runs
+    public function __construct(
+        private readonly ProjectService $projectService
+    ) {}
+
     public function store(StoreProjectMemberRequest $request, Project $project): RedirectResponse
     {
         $invitee = User::where('email', $request->validated()['email'])->first();
 
-        $project->members()->attach($invitee->id, [
-            'role' => $request->validated()['role'],
-        ]);
+        $this->projectService->addMember($project, $invitee, $request->validated()['role']);
 
         ActivityLogger::log(
             projectId: $project->id,
             type: 'member_added',
             description: Auth::user()->name . " added {$invitee->name} as {$request->validated()['role']}",
             metadata: ['user_id' => $invitee->id, 'role' => $request->validated()['role']]
-        );
-
-        // Send invitation email via queue
-        Mail::to($invitee->email)->send(
-            new ProjectInvitationMail($project, $invitee, $request->validated()['role'])
         );
 
         return back()->with('success', "{$invitee->name} added to the project.");
@@ -45,7 +40,7 @@ class ProjectMemberController extends Controller
             return back()->withErrors(['general' => 'Cannot remove the project owner.']);
         }
 
-        $project->members()->detach($user->id);
+        $this->projectService->removeMember($project, $user);
 
         ActivityLogger::log(
             projectId: $project->id,
