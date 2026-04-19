@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectMemberController;
+use App\Http\Controllers\LabelController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
 
@@ -68,6 +70,36 @@ Route::middleware(['auth', 'verified'])->group(function () {
             '/projects/{project}/tasks/{task}/comments/{comment}',
             [CommentController::class, 'destroy']
         )->name('projects.tasks.comments.destroy');
+
+        // ── Attachments ───────────────────────────────────────────────
+        Route::post(
+            '/projects/{project}/tasks/{task}/attachments',
+            [AttachmentController::class, 'store']
+        )->name('projects.tasks.attachments.store');
+
+        Route::get(
+            '/projects/{project}/tasks/{task}/attachments/{attachment}',
+            [AttachmentController::class, 'show']
+        )->name('projects.tasks.attachments.show');
+
+        Route::delete(
+            '/projects/{project}/tasks/{task}/attachments/{attachment}',
+            [AttachmentController::class, 'destroy']
+        )->name('projects.tasks.attachments.destroy');
+
+        // ── Labels ───────────────────────────────────────────────────
+        // Label management (managers/owners)
+        Route::post('/projects/{project}/labels', [LabelController::class, 'store'])
+            ->name('projects.labels.store')
+            ->middleware('project.member:manager');
+
+        Route::delete('/projects/{project}/labels/{label}', [LabelController::class, 'destroy'])
+            ->name('projects.labels.destroy')
+            ->middleware('project.member:manager');
+
+        // Sync labels on a task (any member)
+        Route::post('/projects/{project}/tasks/{task}/labels', [LabelController::class, 'sync'])
+            ->name('projects.tasks.labels.sync');
     });
 });
 

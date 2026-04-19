@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Task extends Model
@@ -45,5 +47,51 @@ class Task extends Model
     {
         return $this->morphMany(Comment::class, 'commentable')
             ->latest(); // newest first
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(Attachment::class)->latest();
+    }
+
+    public function labels(): BelongsToMany
+    {
+        return $this->belongsToMany(Label::class);
+    }
+
+    public function scopeSearch($query, ?string $term): void
+    {
+        if (blank($term)) {
+            return;
+        }
+
+        $term = trim($term);
+
+        $query->where(function ($q) use ($term) {
+            $q->where('title', 'LIKE', "%{$term}%")
+                ->orWhere('description', 'LIKE', "%{$term}%");
+        });
+    }
+
+    public function scopeFilterStatus($query, ?string $status): void
+    {
+        $allowed = ['todo', 'in_progress', 'done'];
+
+        if (blank($status) || ! in_array($status, $allowed)) {
+            return;
+        }
+
+        $query->where('status', $status);
+    }
+
+    public function scopeFilterPriority($query, ?string $priority): void
+    {
+        $allowed = ['low', 'medium', 'high'];
+
+        if (blank($priority) || ! in_array($priority, $allowed)) {
+            return;
+        }
+
+        $query->where('priority', $priority);
     }
 }

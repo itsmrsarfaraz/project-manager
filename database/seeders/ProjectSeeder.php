@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Comment;
+use App\Models\Label;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -28,6 +29,25 @@ class ProjectSeeder extends Seeder
                 // Step A: Add the owner to the pivot table as 'owner' role
                 // attach() inserts a row into project_user pivot table
                 $project->members()->attach($owner->id, ['role' => 'owner']);
+
+                // Create labels for the project
+                // Create 3–5 labels for this project
+                $labelCount = rand(3, 5);
+                try {
+                    $labels = Label::factory($labelCount)->create(['project_id' => $project->id]);
+                } catch (\Exception $e) {
+                    // unique constraint may fail if same label name generated twice — just skip
+                    $labels = Label::where('project_id', $project->id)->get();
+                }
+
+                // Attach random labels to tasks
+                foreach ($project->tasks as $task) {
+                    if ($labels->isNotEmpty() && rand(0, 1)) {
+                        $task->labels()->sync(
+                            $labels->random(rand(1, min(3, $labels->count())))->pluck('id')
+                        );
+                    }
+                }
 
                 // Step B: Add 2–4 other random members
                 $otherUsers = $users

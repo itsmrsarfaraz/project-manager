@@ -65,4 +65,44 @@ class Project extends Model
         return $this->morphMany(Comment::class, 'commentable')
             ->latest();
     }
+
+    public function labels(): HasMany
+    {
+        return $this->hasMany(Label::class);
+    }
+
+    /**
+     * Query scope: filter projects by search term.
+     * Usage: Project::query()->search($term)->get()
+     *
+     * Scope methods are prefixed with "scope" but called without it.
+     * scopeSearch() is called as ->search()
+     */
+    public function scopeSearch($query, ?string $term): void
+    {
+        if (blank($term)) { // blank() = null OR empty string
+            return;         // if no search term, don't modify the query at all
+        }
+
+        // Sanitize: trim whitespace
+        $term = trim($term);
+
+        $query->where(function ($q) use ($term) {
+            $q->where('name', 'LIKE', "%{$term}%")
+                ->orWhere('description', 'LIKE', "%{$term}%");
+        });
+    }
+
+    /**
+     * Scope: filter by status
+     * Usage: ->filterStatus('active')
+     */
+    public function scopeFilterStatus($query, ?string $status): void
+    {
+        if (blank($status) || ! in_array($status, ['active', 'archived', 'completed'])) {
+            return;
+        }
+
+        $query->where('status', $status);
+    }
 }

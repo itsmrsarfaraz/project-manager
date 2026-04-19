@@ -58,6 +58,60 @@
                 </div>
             </div>
 
+            {{-- Task search + filter bar --}}
+            <form method="GET" action="{{ route('projects.show', $project) }}"
+                class="flex flex-wrap gap-2 mb-4">
+
+                <input type="text" name="search" value="{{ request('search') }}"
+                    placeholder="Search tasks..."
+                    class="flex-1 min-w-0 border-gray-300 rounded-md shadow-sm text-sm" />
+
+                <select name="status"
+                        class="border-gray-300 rounded-md shadow-sm text-sm">
+                    <option value="">All statuses</option>
+                    @foreach(['todo' => 'To Do', 'in_progress' => 'In Progress', 'done' => 'Done'] as $val => $label)
+                        <option value="{{ $val }}" {{ request('status') === $val ? 'selected' : '' }}>
+                            {{ $label }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <select name="priority"
+                        class="border-gray-300 rounded-md shadow-sm text-sm">
+                    <option value="">All priorities</option>
+                    @foreach(['high' => 'High', 'medium' => 'Medium', 'low' => 'Low'] as $val => $label)
+                        <option value="{{ $val }}" {{ request('priority') === $val ? 'selected' : '' }}>
+                            {{ $label }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <x-primary-button type="submit">Filter</x-primary-button>
+
+                @if (request()->hasAny(['search', 'status', 'priority']))
+                    <a href="{{ route('projects.show', $project) }}"
+                    class="px-3 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                        Clear
+                    </a>
+                @endif
+
+            </form>
+
+            {{-- Update loop to use $tasks instead of $project->tasks --}}
+            @forelse ($tasks as $task)
+                {{-- ... existing task card markup ... --}}
+            @empty
+                <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+                    @if (request()->hasAny(['search', 'status', 'priority']))
+                        No tasks match your filters.
+                    @else
+                        No tasks yet.
+                        <a href="{{ route('projects.tasks.create', $project) }}"
+                        class="text-indigo-600 hover:underline">Add the first task.</a>
+                    @endif
+                </div>
+            @endforelse
+
             {{-- Two Column Layout --}}
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -90,6 +144,17 @@
                                        class="font-medium text-gray-900 hover:text-indigo-600">
                                         {{ $task->title }}
                                     </a>
+                                    {{-- Inside the task loop, after the title --}}
+                                    @if ($task->labels->isNotEmpty())
+                                        <div class="flex gap-1 mt-1">
+                                            @foreach ($task->labels as $label)
+                                                <span class="w-2 h-2 rounded-full inline-block"
+                                                    style="background-color: {{ $label->color }}"
+                                                    title="{{ $label->name }}">
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 </div>
 
                                 <div class="mt-1 flex items-center gap-3 text-xs text-gray-500">
@@ -182,6 +247,47 @@
                                 </div>
                                 <x-primary-button class="w-full justify-center">Invite</x-primary-button>
                             </form>
+                        </div>
+                    @endcan
+
+                    {{-- Inside the members column, below the invite form --}}
+                    @can('update', $project)
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h4 class="text-sm font-semibold text-gray-700 mb-3">Manage Labels</h4>
+
+                            {{-- Existing labels --}}
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                @forelse ($project->labels as $label)
+                                    <div class="flex items-center gap-1">
+                                        <span class="px-2 py-0.5 rounded-full text-xs text-white font-medium"
+                                            style="background-color: {{ $label->color }}">
+                                            {{ $label->name }}
+                                        </span>
+                                        <form method="POST"
+                                            action="{{ route('projects.labels.destroy', [$project, $label]) }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-gray-400 hover:text-red-500 text-xs"
+                                                    title="Delete label">×</button>
+                                        </form>
+                                    </div>
+                                @empty
+                                    <p class="text-xs text-gray-400 italic">No labels yet.</p>
+                                @endforelse
+                            </div>
+
+                            {{-- Create label form --}}
+                            <form method="POST" action="{{ route('projects.labels.store', $project) }}"
+                                class="flex items-center gap-2">
+                                @csrf
+                                <input type="text" name="name" placeholder="Label name"
+                                    class="flex-1 text-xs border-gray-300 rounded shadow-sm"
+                                    :value="old('name')" />
+                                <input type="color" name="color" value="#6366f1"
+                                    class="h-8 w-10 rounded border-gray-300 cursor-pointer" />
+                                <x-primary-button class="text-xs py-1">Add</x-primary-button>
+                            </form>
+                            <x-input-error :messages="$errors->get('name')" class="mt-1" />
                         </div>
                     @endcan
 
