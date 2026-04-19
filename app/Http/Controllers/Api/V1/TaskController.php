@@ -70,10 +70,6 @@ class TaskController extends Controller
         return response()->json(null, 204);
     }
 
-    /**
-     * Quick status update endpoint — common API pattern.
-     * PATCH /api/v1/projects/{project}/tasks/{task}/status
-     */
     public function updateStatus(Request $request, Project $project, Task $task): JsonResponse
     {
         $this->authorize('update', $task);

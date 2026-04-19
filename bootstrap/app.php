@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'project.member' => \App\Http\Middleware\EnsureProjectMember::class,
         ]);
+
+
+        // Configure named rate limiters
+        $middleware->throttleApi(); // enables default 'api' throttle (60/min)
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (

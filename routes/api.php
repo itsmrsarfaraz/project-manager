@@ -5,27 +5,25 @@ use App\Http\Controllers\Api\V1\ProjectController;
 use App\Http\Controllers\Api\V1\TaskController;
 use Illuminate\Support\Facades\Route;
 
-// ── V1 API Routes ─────────────────────────────────────────────────────
-
 Route::prefix('v1')->name('api.v1.')->group(function () {
 
-    // ── Public auth routes (no token required) ─────────────────────
-    Route::post('/login',  [AuthController::class, 'login'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])
+        ->name('login')
+        ->middleware('throttle:login');
 
-    // ── Protected routes (Sanctum token required) ──────────────────
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
-        // Auth
         Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
         Route::get('/me',      [AuthController::class, 'me'])->name('me');
 
-        // Projects
         Route::apiResource('projects', ProjectController::class);
-
-        // Tasks (nested under projects)
         Route::apiResource('projects.tasks', TaskController::class);
 
-        // Quick status update
+        Route::post(
+            '/projects/{project}/tasks/{task}/attachments',
+            [\App\Http\Controllers\AttachmentController::class, 'store']
+        )->middleware('throttle:heavy');
+
         Route::patch(
             '/projects/{project}/tasks/{task}/status',
             [TaskController::class, 'updateStatus']

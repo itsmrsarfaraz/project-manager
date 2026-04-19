@@ -34,7 +34,6 @@ class ProjectController extends Controller
             ->latest()
             ->paginate($request->input('per_page', 15));
 
-        // ResourceCollection wraps paginated results with links + meta automatically
         return ProjectResource::collection($projects);
     }
 
@@ -47,10 +46,7 @@ class ProjectController extends Controller
 
         $project->load('owner', 'members');
 
-        return response()->json(
-            new ProjectResource($project),
-            201 // HTTP 201 Created
-        );
+        return response()->json(new ProjectResource($project), 201);
     }
 
     public function show(Request $request, Project $project): JsonResponse
@@ -77,6 +73,6 @@ class ProjectController extends Controller
 
         $this->projectService->deleteProject($project);
 
-        return response()->json(null, 204); // HTTP 204 No Content
+        return response()->json(null, 204);
     }
 }
