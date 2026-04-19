@@ -18,15 +18,17 @@ class ProjectMemberController extends Controller
 
     public function store(StoreProjectMemberRequest $request, Project $project): RedirectResponse
     {
+        /** @var \App\Models\User $invitedBy */
+        $invitedBy = Auth::user();
+
         $invitee = User::where('email', $request->validated()['email'])->first();
 
-        $this->projectService->addMember($project, $invitee, $request->validated()['role']);
-
-        ActivityLogger::log(
-            projectId: $project->id,
-            type: 'member_added',
-            description: Auth::user()->name . " added {$invitee->name} as {$request->validated()['role']}",
-            metadata: ['user_id' => $invitee->id, 'role' => $request->validated()['role']]
+        // Service now handles email + activity log via Action
+        $this->projectService->addMember(
+            $project,
+            $invitee,
+            $request->validated()['role'],
+            $invitedBy   // ← pass the inviter
         );
 
         return back()->with('success', "{$invitee->name} added to the project.");
