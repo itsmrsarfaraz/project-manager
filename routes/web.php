@@ -10,6 +10,22 @@ use App\Http\Controllers\LabelController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
 
+
+// Email preview routes — DEVELOPMENT ONLY
+if (app()->environment('local')) {
+    Route::get('/mail-preview/task-assigned', function () {
+        $task    = \App\Models\Task::with('project')->whereNotNull('assigned_to')->first();
+        $assignee = $task->assignee;
+        return new \App\Mail\TaskAssignedMail($task, $assignee);
+    });
+
+    Route::get('/mail-preview/project-invitation', function () {
+        $project = \App\Models\Project::first();
+        $invitee = \App\Models\User::find(2);
+        return new \App\Mail\ProjectInvitationMail($project, $invitee, 'member');
+    });
+}
+
 Route::get('/', function () {
     return view('welcome');
 });
