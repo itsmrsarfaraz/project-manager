@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
@@ -56,6 +57,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // ── Tasks ─────────────────────────────────────────────────────
         Route::resource('projects.tasks', TaskController::class)
             ->only(['create', 'store', 'show', 'edit', 'update', 'destroy']);
+
+        // ── Comments ──────────────────────────────────────────────────
+        Route::post(
+            '/projects/{project}/tasks/{task}/comments',
+            [CommentController::class, 'store']
+        )->name('projects.tasks.comments.store');
+
+        Route::delete(
+            '/projects/{project}/tasks/{task}/comments/{comment}',
+            [CommentController::class, 'destroy']
+        )->name('projects.tasks.comments.destroy');
     });
 });
 
