@@ -56,6 +56,47 @@
                     </span>
                 </div>
 
+                {{-- Labels --}}
+                @if ($task->labels->isNotEmpty())
+                    <div class="flex flex-wrap gap-2">
+                        @foreach ($task->labels as $label)
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                                style="background-color: {{ $label->color }}">
+                                {{ $label->name }}
+                            </span>
+                        @endforeach
+                    </div>
+                @endif
+
+                {{-- Update labels form --}}
+                <div class="pt-4 border-t border-gray-100">
+                    <form method="POST"
+                        action="{{ route('projects.tasks.labels.sync', [$project, $task]) }}">
+                        @csrf
+                        <p class="text-sm font-semibold text-gray-500 mb-2">Labels</p>
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            @foreach ($project->labels as $label)
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <input type="checkbox"
+                                        name="labels[]"
+                                        value="{{ $label->id }}"
+                                        {{ $task->labels->contains($label->id) ? 'checked' : '' }}
+                                        class="rounded border-gray-300 text-indigo-600" />
+                                    <span class="text-sm px-2 py-0.5 rounded-full text-white"
+                                        style="background-color: {{ $label->color }}">
+                                        {{ $label->name }}
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                        @if ($project->labels->isEmpty())
+                            <p class="text-xs text-gray-400 italic">No labels defined for this project yet.</p>
+                        @else
+                            <x-primary-button type="submit">Update Labels</x-primary-button>
+                        @endif
+                    </form>
+                </div>
+
                 {{-- Description --}}
                 @if ($task->description)
                     <div>

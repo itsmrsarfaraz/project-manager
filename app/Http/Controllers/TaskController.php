@@ -37,7 +37,10 @@ class TaskController extends Controller
         $task->load([
             'comments.author',
             'attachments.uploader', // load attachments with who uploaded
+            'labels',
         ]);
+
+        $project->load('labels');
 
         return view('tasks.show', compact('project', 'task'));
     }

@@ -65,4 +65,9 @@ class Project extends Model
         return $this->morphMany(Comment::class, 'commentable')
             ->latest();
     }
+
+    public function labels(): HasMany
+    {
+        return $this->hasMany(Label::class);
+    }
 }

@@ -90,6 +90,17 @@
                                        class="font-medium text-gray-900 hover:text-indigo-600">
                                         {{ $task->title }}
                                     </a>
+                                    {{-- Inside the task loop, after the title --}}
+                                    @if ($task->labels->isNotEmpty())
+                                        <div class="flex gap-1 mt-1">
+                                            @foreach ($task->labels as $label)
+                                                <span class="w-2 h-2 rounded-full inline-block"
+                                                    style="background-color: {{ $label->color }}"
+                                                    title="{{ $label->name }}">
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 </div>
 
                                 <div class="mt-1 flex items-center gap-3 text-xs text-gray-500">
@@ -182,6 +193,47 @@
                                 </div>
                                 <x-primary-button class="w-full justify-center">Invite</x-primary-button>
                             </form>
+                        </div>
+                    @endcan
+
+                    {{-- Inside the members column, below the invite form --}}
+                    @can('update', $project)
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h4 class="text-sm font-semibold text-gray-700 mb-3">Manage Labels</h4>
+
+                            {{-- Existing labels --}}
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                @forelse ($project->labels as $label)
+                                    <div class="flex items-center gap-1">
+                                        <span class="px-2 py-0.5 rounded-full text-xs text-white font-medium"
+                                            style="background-color: {{ $label->color }}">
+                                            {{ $label->name }}
+                                        </span>
+                                        <form method="POST"
+                                            action="{{ route('projects.labels.destroy', [$project, $label]) }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-gray-400 hover:text-red-500 text-xs"
+                                                    title="Delete label">×</button>
+                                        </form>
+                                    </div>
+                                @empty
+                                    <p class="text-xs text-gray-400 italic">No labels yet.</p>
+                                @endforelse
+                            </div>
+
+                            {{-- Create label form --}}
+                            <form method="POST" action="{{ route('projects.labels.store', $project) }}"
+                                class="flex items-center gap-2">
+                                @csrf
+                                <input type="text" name="name" placeholder="Label name"
+                                    class="flex-1 text-xs border-gray-300 rounded shadow-sm"
+                                    :value="old('name')" />
+                                <input type="color" name="color" value="#6366f1"
+                                    class="h-8 w-10 rounded border-gray-300 cursor-pointer" />
+                                <x-primary-button class="text-xs py-1">Add</x-primary-button>
+                            </form>
+                            <x-input-error :messages="$errors->get('name')" class="mt-1" />
                         </div>
                     @endcan
 

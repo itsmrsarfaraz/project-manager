@@ -48,7 +48,7 @@ class ProjectController extends Controller
 
     public function show(Project $project): View
     {
-        $project->load(['members', 'tasks.assignee', 'owner']);
+        $project->load(['members', 'tasks.assignee', 'tasks.labels', 'owner', 'labels']);
 
         return view('projects.show', compact('project'));
     }
