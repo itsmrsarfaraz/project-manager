@@ -105,4 +105,9 @@ class Project extends Model
 
         $query->where('status', $status);
     }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(Activity::class)->latest();
+    }
 }

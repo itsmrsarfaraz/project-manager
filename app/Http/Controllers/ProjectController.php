@@ -58,7 +58,6 @@ class ProjectController extends Controller
     {
         $project->load(['members', 'owner', 'labels']);
 
-        // Tasks with search + filters applied
         $tasks = $project->tasks()
             ->with(['assignee', 'labels'])
             ->search($request->input('search'))
@@ -67,7 +66,14 @@ class ProjectController extends Controller
             ->latest()
             ->get();
 
-        return view('projects.show', compact('project', 'tasks'));
+        // Load recent activity — last 15 entries
+        $activities = $project->activities()
+            ->with('user')
+            ->latest()
+            ->take(15)
+            ->get();
+
+        return view('projects.show', compact('project', 'tasks', 'activities'));
     }
 
     public function edit(Project $project): View

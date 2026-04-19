@@ -6,7 +6,9 @@ use App\Http\Requests\StoreProjectMemberRequest;
 use App\Mail\ProjectInvitationMail;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 
 class ProjectMemberController extends Controller
@@ -19,6 +21,13 @@ class ProjectMemberController extends Controller
         $project->members()->attach($invitee->id, [
             'role' => $request->validated()['role'],
         ]);
+
+        ActivityLogger::log(
+            projectId: $project->id,
+            type: 'member_added',
+            description: Auth::user()->name . " added {$invitee->name} as {$request->validated()['role']}",
+            metadata: ['user_id' => $invitee->id, 'role' => $request->validated()['role']]
+        );
 
         // Send invitation email via queue
         Mail::to($invitee->email)->send(
@@ -37,6 +46,13 @@ class ProjectMemberController extends Controller
         }
 
         $project->members()->detach($user->id);
+
+        ActivityLogger::log(
+            projectId: $project->id,
+            type: 'member_removed',
+            description: Auth::user()->name . " removed {$user->name} from the project",
+            metadata: ['user_id' => $user->id]
+        );
 
         return back()->with('success', 'Member removed from project.');
     }

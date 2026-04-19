@@ -294,6 +294,47 @@
                 </div>
             </div>
 
+            {{-- ── Activity Feed ─────────────────────────────────── --}}
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-800">Recent Activity</h3>
+                </div>
+
+                <div class="divide-y divide-gray-50">
+                    @forelse ($activities as $activity)
+                        <div class="px-6 py-3 flex items-start gap-3">
+
+                            {{-- Activity type icon --}}
+                            <div class="mt-0.5 shrink-0">
+                                @php
+                                    $icon = match(true) {
+                                        str_contains($activity->type, 'created') => '✅',
+                                        str_contains($activity->type, 'updated') => '✏️',
+                                        str_contains($activity->type, 'deleted') => '🗑️',
+                                        str_contains($activity->type, 'member')  => '👤',
+                                        default                                   => '📋',
+                                    };
+                                @endphp
+                                <span class="text-base">{{ $icon }}</span>
+                            </div>
+
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm text-gray-700">
+                                    {{ $activity->description }}
+                                </p>
+                                <p class="text-xs text-gray-400 mt-0.5">
+                                    {{ $activity->created_at->diffForHumans() }}
+                                </p>
+                            </div>
+
+                        </div>
+                    @empty
+                        <div class="px-6 py-8 text-center text-gray-400 text-sm">
+                            No activity yet.
+                        </div>
+                    @endforelse
+                </div>
+            </div>
         </div>
     </div>
 </x-app-layout>
