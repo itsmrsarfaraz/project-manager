@@ -7,6 +7,8 @@ use App\Services\ActivityLogger;
 
 class LogTaskStatusChangedActivity
 {
+    public string $queue = 'low';
+
     public function handle(TaskStatusChanged $event): void
     {
         $from = str_replace('_', ' ', $event->oldStatus);

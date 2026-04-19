@@ -11,8 +11,6 @@ class ProjectCollection extends ResourceCollection
     {
         return [
             'data' => $this->collection,
-            // add collection-level metadata here
-            // e.g. 'total_active' => $this->collection->where('status', 'active')->count()
         ];
     }
 }

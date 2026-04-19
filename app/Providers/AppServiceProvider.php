@@ -2,31 +2,22 @@
 
 namespace App\Providers;
 
-// Services & Singletons
-use App\Services\ProjectService;
-use App\Services\ProjectStatsService;
-use App\Services\TaskService;
-
-// Models & Observers
-use App\Models\Project;
-use App\Models\Task;
-use App\Observers\ProjectObserver;
-use App\Observers\TaskObserver;
-
-// Events
 use App\Events\ProjectMemberAdded;
 use App\Events\TaskCreated;
 use App\Events\TaskStatusChanged;
-
-// Listeners
 use App\Listeners\InvalidateTaskStatsCache;
 use App\Listeners\LogMemberAddedActivity;
 use App\Listeners\LogTaskCreatedActivity;
 use App\Listeners\LogTaskStatusChangedActivity;
 use App\Listeners\SendProjectInvitationEmail;
 use App\Listeners\SendTaskAssignedNotification;
-
-// Laravel
+use App\Models\Project;
+use App\Models\Task;
+use App\Observers\ProjectObserver;
+use App\Observers\TaskObserver;
+use App\Services\ProjectService;
+use App\Services\ProjectStatsService;
+use App\Services\TaskService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -39,11 +30,13 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(ProjectService::class);
         $this->app->singleton(TaskService::class);
-        $this->app->singleton(App\Providers\ProjectStatsService::class);
+        $this->app->singleton(ProjectStatsService::class);
 
+        // Telescope only in local — use strings to avoid class-not-found errors
+        // when the package is not installed (e.g. on production)
         if ($this->app->environment('local')) {
-            $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
-            $this->app->register(\App\Providers\TelescopeServiceProvider::class);
+            $this->app->register('Laravel\Telescope\TelescopeServiceProvider');
+            $this->app->register('App\Providers\TelescopeServiceProvider');
         }
     }
 
@@ -53,11 +46,9 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)
                 ->by($request->user()?->id ?: $request->ip())
-                ->response(function () {
-                    return response()->json([
-                        'message' => 'Too many requests. Please slow down.',
-                    ], 429);
-                });
+                ->response(fn() => response()->json([
+                    'message' => 'Too many requests. Please slow down.',
+                ], 429));
         });
 
         RateLimiter::for('login', function (Request $request) {
@@ -70,11 +61,9 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('heavy', function (Request $request) {
             return Limit::perMinute(10)
                 ->by($request->user()?->id ?: $request->ip())
-                ->response(function () {
-                    return response()->json([
-                        'message' => 'Rate limit exceeded for heavy operations.',
-                    ], 429);
-                });
+                ->response(fn() => response()->json([
+                    'message' => 'Rate limit exceeded for heavy operations.',
+                ], 429));
         });
 
         // ── Observers ─────────────────────────────────────────────────
@@ -90,5 +79,7 @@ class AppServiceProvider extends ServiceProvider
 
         Event::listen(ProjectMemberAdded::class, SendProjectInvitationEmail::class);
         Event::listen(ProjectMemberAdded::class, LogMemberAddedActivity::class);
+
+        Event::listen(TaskStatusChanged::class, InvalidateTaskStatsCache::class);
     }
 }

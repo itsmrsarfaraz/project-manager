@@ -7,24 +7,30 @@ use App\Mail\TaskAssignedMail;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Mail;
 
-// ShouldQueue → this listener runs in the background queue
 class SendTaskAssignedNotification implements ShouldQueue
 {
+    public string $queue = 'high';
+    public int    $tries = 3;
+    public int    $backoff = 60;
+
     public function handle(TaskCreated $event): void
     {
         $task     = $event->task;
-        $assignee = $task->assignee; // loaded via relationship
+        $assignee = $task->assignee;
 
-        if (! $assignee) {
-            return; // unassigned
-        }
-
-        if ($assignee->id === $event->createdBy->id) {
-            return; // don't email yourself
-        }
+        if (! $assignee) return;
+        if ($assignee->id === $event->createdBy->id) return;
 
         Mail::to($assignee->email)->send(
             new TaskAssignedMail($task->load('project'), $assignee)
         );
+    }
+
+    public function failed(TaskCreated $event, \Throwable $exception): void
+    {
+        \Illuminate\Support\Facades\Log::error('Failed to send task assignment email', [
+            'task_id'   => $event->task->id,
+            'exception' => $exception->getMessage(),
+        ]);
     }
 }

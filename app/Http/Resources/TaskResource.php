@@ -15,13 +15,11 @@ class TaskResource extends JsonResource
             'description' => $this->description,
             'status'      => $this->status,
             'priority'    => $this->priority,
-            'due_date'    => $this->due_date?->toDateString(), // "2025-12-31"
+            'due_date'    => $this->due_date?->toDateString(),
             'project_id'  => $this->project_id,
-
-            // Conditional: only include if the relationship is loaded
-            // Prevents N+1 by not forcing a query when not needed
-            'assignee' => new UserResource($this->whenLoaded('assignee')),
-            'labels'   => $this->whenLoaded(
+            'assigned_to' => $this->assigned_to,
+            'assignee'    => new UserResource($this->whenLoaded('assignee')),
+            'labels'      => $this->whenLoaded(
                 'labels',
                 fn() =>
                 $this->labels->map(fn($l) => [
@@ -30,7 +28,6 @@ class TaskResource extends JsonResource
                     'color' => $l->color,
                 ])
             ),
-
             'created_at' => $this->created_at->toISOString(),
             'updated_at' => $this->updated_at->toISOString(),
         ];

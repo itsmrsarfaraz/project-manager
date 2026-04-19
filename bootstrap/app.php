@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Configure named rate limiters
         $middleware->throttleApi(); // enables default 'api' throttle (60/min)
+        $middleware->statefulApi();
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->render(function (
