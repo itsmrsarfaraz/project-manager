@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\TaskStatusUpdated;
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Mail\TaskAssignedMail;
@@ -87,19 +88,24 @@ class TaskController extends Controller
         return view('tasks.edit', compact('project', 'task', 'members'));
     }
 
-    // UpdateTaskRequest handles authorization + validation + business rules
     public function update(UpdateTaskRequest $request, Project $project, Task $task): RedirectResponse
     {
-        $previousAssignee = $task->assigned_to; // capture BEFORE update
+        $previousAssignee = $task->assigned_to;
+        $previousStatus   = $task->status;
 
         $task->update($request->validated());
 
-        // Only send email if assignee CHANGED to a new person
-        if (
-            $task->assigned_to
-            && $task->assigned_to !== $previousAssignee
-        ) {
+        // Fire email if assignee changed
+        if ($task->assigned_to && $task->assigned_to !== $previousAssignee) {
             $this->dispatchAssignmentEmail($task);
+        }
+
+        // Broadcast status change to all project members viewing the project
+        if ($task->status !== $previousStatus) {
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+            broadcast(new TaskStatusUpdated($task, $user))->toOthers();
+            // toOthers() → don't send to the person who made the change
         }
 
         return redirect()
