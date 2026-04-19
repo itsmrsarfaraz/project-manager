@@ -2,28 +2,27 @@
 
 namespace App\Actions\Tasks;
 
+use App\Events\TaskStatusChanged;
 use App\Events\TaskStatusUpdated;
 use App\Models\Task;
 use App\Models\User;
 
 class UpdateTaskStatusAction
 {
-    /**
-     * A focused action just for status changes.
-     * This is used by both the web controller AND the API.
-     * Having it as an Action means both go through the same code path.
-     */
     public function execute(Task $task, string $newStatus, User $updatedBy): Task
     {
         $oldStatus = $task->status;
 
         if ($oldStatus === $newStatus) {
-            return $task; // no-op — nothing to do
+            return $task;
         }
 
         $task->update(['status' => $newStatus]);
 
-        // Broadcast the change for real-time updates
+        // Fire domain event — listeners log the change
+        TaskStatusChanged::dispatch($task, $oldStatus, $newStatus, $updatedBy);
+
+        // Fire broadcast event — for real-time UI updates
         broadcast(new TaskStatusUpdated($task, $updatedBy))->toOthers();
 
         return $task->fresh();
