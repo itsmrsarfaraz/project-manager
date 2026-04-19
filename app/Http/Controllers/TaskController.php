@@ -34,8 +34,10 @@ class TaskController extends Controller
     {
         $this->authorize('view', $task);
 
-        // Eager load comments with their authors
-        $task->load('comments.author');
+        $task->load([
+            'comments.author',
+            'attachments.uploader', // load attachments with who uploaded
+        ]);
 
         return view('tasks.show', compact('project', 'task'));
     }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
@@ -68,6 +69,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
             '/projects/{project}/tasks/{task}/comments/{comment}',
             [CommentController::class, 'destroy']
         )->name('projects.tasks.comments.destroy');
+
+        // ── Attachments ───────────────────────────────────────────────
+        Route::post(
+            '/projects/{project}/tasks/{task}/attachments',
+            [AttachmentController::class, 'store']
+        )->name('projects.tasks.attachments.store');
+
+        Route::get(
+            '/projects/{project}/tasks/{task}/attachments/{attachment}',
+            [AttachmentController::class, 'show']
+        )->name('projects.tasks.attachments.show');
+
+        Route::delete(
+            '/projects/{project}/tasks/{task}/attachments/{attachment}',
+            [AttachmentController::class, 'destroy']
+        )->name('projects.tasks.attachments.destroy');
     });
 });
 

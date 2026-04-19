@@ -98,6 +98,92 @@
                 </div>
 
             </div>
+
+            {{-- ── Attachments ─────────────────────────────────── --}}
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h3 class="font-semibold text-gray-800">
+                        Attachments
+                        <span class="text-sm text-gray-400 font-normal ml-1">
+                            ({{ $task->attachments->count() }})
+                        </span>
+                    </h3>
+                </div>
+
+                {{-- Existing attachments --}}
+                @if ($task->attachments->isNotEmpty())
+                    <div class="divide-y divide-gray-100">
+                        @foreach ($task->attachments as $attachment)
+                            <div class="px-6 py-3 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    {{-- File type icon --}}
+                                    <div class="text-2xl">
+                                        @php
+                                            $icon = match(true) {
+                                                str_contains($attachment->mime_type, 'image') => '🖼️',
+                                                str_contains($attachment->mime_type, 'pdf')   => '📄',
+                                                str_contains($attachment->mime_type, 'zip')   => '🗜️',
+                                                str_contains($attachment->mime_type, 'word')  => '📝',
+                                                str_contains($attachment->mime_type, 'excel') => '📊',
+                                                default                                        => '📎',
+                                            };
+                                        @endphp
+                                        {{ $icon }}
+                                    </div>
+                                    <div>
+                                        <a href="{{ route('projects.tasks.attachments.show', [$project, $task, $attachment]) }}"
+                                        class="text-sm font-medium text-indigo-600 hover:underline">
+                                            {{ $attachment->original_name }}
+                                        </a>
+                                        <p class="text-xs text-gray-400">
+                                            {{ $attachment->formattedSize() }}
+                                            · uploaded by {{ $attachment->uploader->name }}
+                                            · {{ $attachment->created_at->diffForHumans() }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {{-- Delete --}}
+                                @if ($attachment->user_id === auth()->id())
+                                    <form method="POST"
+                                        action="{{ route('projects.tasks.attachments.destroy', [$project, $task, $attachment]) }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="text-xs text-red-400 hover:text-red-600"
+                                                onclick="return confirm('Delete this file?')">
+                                            Remove
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
+                {{-- Upload form --}}
+                <div class="px-6 py-4 bg-gray-50 rounded-b-lg border-t border-gray-100">
+                    <form method="POST"
+                        action="{{ route('projects.tasks.attachments.store', [$project, $task]) }}"
+                        enctype="multipart/form-data">
+                        {{-- enctype="multipart/form-data" is REQUIRED for file uploads --}}
+                        @csrf
+                        <div class="flex items-center gap-3">
+                            <input type="file"
+                                name="file"
+                                class="text-sm text-gray-600 file:mr-4 file:py-1.5 file:px-3
+                                        file:rounded file:border-0 file:text-sm file:font-medium
+                                        file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100
+                                        flex-1" />
+                            <x-primary-button type="submit">Upload</x-primary-button>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">
+                            Max 10MB. Allowed: PDF, Word, Excel, images, ZIP, TXT.
+                        </p>
+                        <x-input-error :messages="$errors->get('file')" class="mt-1" />
+                    </form>
+                </div>
+            </div>
             
             {{-- ── Comments Section ──────────────────────────────── --}}
             <div class="bg-white rounded-lg shadow">
